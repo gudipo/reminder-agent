@@ -1,7 +1,7 @@
 // Terminerinnerungs-Endpunkt: löst einen Outbound-Call über ElevenLabs+Twilio aus.
 //
 // Testaufruf im Browser (anpassen!):
-// https://DEINE-DOMAIN.vercel.app/api/reminder-call?name=Max&phone=+49123456789&date=2026-03-01&time=10:30
+// https://reminder-agent-eight.vercel.app/api/reminder-call?name=Max&phone=+49123456789&date=2026-03-01&time=10:30
 
 // WICHTIG: Diese URL gleich in Schritt 2.2 aus der ElevenLabs-Doku kopieren
 const ELEVENLABS_OUTBOUND_URL = 'https://api.elevenlabs.io/v1/convai/twilio/outbound-call';
