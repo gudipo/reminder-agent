@@ -46,25 +46,27 @@ module.exports = async (req, res) => {
   }
 
   // 3) Relevante Daten aus dem Payload lesen
-  // Die genaue Struktur hängt etwas von deiner Cal.com-Konfiguration ab.
-  // Wir bauen ein paar sinnvolle Fallbacks ein.
-
   const startTime = payload.startTime; // ISO-String, z.B. "2026-03-01T09:30:00.000Z"
   const attendees = payload.attendees || [];
   const firstAttendee = attendees[0] || {};
 
   const name =
     firstAttendee.name ||
-    (payload.responses && payload.responses.name && payload.responses.name.value) ||
+    (payload.responses &&
+      payload.responses.name &&
+      payload.responses.name.value) ||
     'Patient';
 
   // Telefonnummer an verschiedenen möglichen Stellen suchen:
   let phone =
-    firstAttendee.phoneNumber || // falls Cal das Feld so nennt
-    firstAttendee.phone || // oder so
+    firstAttendee.phoneNumber || // Standard-Feld laut Cal.com-API
+    firstAttendee.phone || // falls anders benannt
     (payload.responses &&
       payload.responses.phone &&
       payload.responses.phone.value) || // falls du ein benutzerdefiniertes Feld "phone" nutzt
+    (payload.responses &&
+      payload.responses.phone_number &&
+      payload.responses.phone_number.value) ||
     null;
 
   if (!phone) {
@@ -87,21 +89,45 @@ module.exports = async (req, res) => {
 
   if (startTime) {
     const start = new Date(startTime);
+
+    // NEU: Abstand in Tagen bis zum Termin berechnen
+    const now = new Date();
+    const msDiff = start.getTime() - now.getTime();
+    const daysDiff = msDiff / (1000 * 60 * 60 * 24);
+
+    // NEU: Wenn Termin heute oder morgen ist -> keinen Anruf auslösen
+    if (daysDiff < 2) {
+      console.log(
+        'Skipping reminder call because appointment is too soon. daysDiff=',
+        daysDiff,
+      );
+
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json');
+      return res.end(
+        JSON.stringify({
+          success: true,
+          skipped: true,
+          reason:
+            'Appointment is today or tomorrow - quick logic: no immediate call',
+        }),
+      );
+    }
+
+    // Wie bisher: Datum/Uhrzeit für den Agenten setzen
     appointmentDate = start.toISOString().slice(0, 10); // YYYY-MM-DD
     appointmentTime = start.toISOString().slice(11, 16); // HH:MM (UTC!)
-    // Hinweis: Zeitzonen-Feinschliff können wir später ergänzen.
   }
 
   // Optional: Typ und Ort aus dem Payload (falls verfügbar)
   const appointmentType =
     payload.eventType || payload.title || 'Zahnarzttermin';
-  const practiceLocation =
-    payload.location || null;
+  const practiceLocation = payload.location || null;
 
   // 5) URL zu deiner bestehenden reminder-call-Function bauen
   const baseUrl =
     process.env.REMINDER_BASE_URL ||
-    'https://reminder-agent-eight.vercel.app'; // Fallback
+    'https://reminder-agent-eight.vercel.app'; // Fallback, falls ENV nicht gesetzt
 
   const url = new URL('/api/reminder-call', baseUrl);
 
