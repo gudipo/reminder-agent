@@ -4,7 +4,7 @@
 // https://DEINE-DOMAIN.vercel.app/api/reminder-call?name=Max&phone=+49123456789&date=2026-03-01&time=10:30
 
 // WICHTIG: Diese URL gleich in Schritt 2.2 aus der ElevenLabs-Doku kopieren
-const ELEVENLABS_OUTBOUND_URL = 'HIER_DIE_POST_URL_AUS_DER_ELEVENLABS-DOKU_EINFÜGEN';
+const ELEVENLABS_OUTBOUND_URL = 'https://api.elevenlabs.io/v1/convai/twilio/outbound-call';
 
 module.exports = async (req, res) => {
   // Für den Start: nur GET erlauben, dann kannst du bequem im Browser testen
